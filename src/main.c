@@ -15,6 +15,7 @@
 #include <cr_section_macros.h>
 
 #include "i2c_master.h"
+#include "st7032i.h"
 
 // LEDのポート番号と、ピン番号を定義
 #define LED_PORT 0
@@ -22,6 +23,7 @@
 
 static const uint8_t LED_ADDR = 0xE2;
 static const uint8_t TRM_ADDR = 0x90;
+static const uint8_t LCD_ADDR = 0x7C;
 
 void gpio_init() {
 	// GPIOドメインの電源を入れる
@@ -83,6 +85,16 @@ static inline uint8_t *format_digit(uint8_t *buf, unsigned int length, unsigned 
   return buf;
 }
 
+/**
+ * マイクロ秒単位で指定時間待つ
+ */
+void wait(uint8_t ms) {
+	for (uint8_t i = 0; i < ms; i++) {
+		unsigned long last_systick = systick_count;
+		while (last_systick == systick_count) ;
+	}
+}
+
 int main(void) {
 	// クロック設定の更新
 	SystemCoreClockUpdate();
@@ -107,6 +119,10 @@ int main(void) {
 	i2cbuf[0] = 0x03; // レジスタアドレス
 	i2cbuf[1] = 0x80; // 設定値
 	I2CMasterTX(TRM_ADDR, i2cbuf, 2);
+
+	// LCDモジュールを初期化する
+	st7032i_init(LCD_ADDR, wait);
+	st7023i_clear_display(LCD_ADDR);
 
 	// LEDの次の出力状態を保持する変数
 	int led_on = 0;
@@ -133,8 +149,11 @@ int main(void) {
     		termo_value = termo_value * 0.78;
     		// 4桁で数値を文字列に変換してバッファに格納
     		format_digit(i2cbuf, 4, termo_value);
+    		i2cbuf[4] = 0x00; // nullターミネータを設定
     		// 4文字をLEDに書き込む
     		I2CMasterTX(LED_ADDR, i2cbuf, 4);
+    		// 値をLCDに書き込む
+    		st7032i_display(LCD_ADDR, 0, 0, (char*)i2cbuf);
     	}
     }
     return 0;
