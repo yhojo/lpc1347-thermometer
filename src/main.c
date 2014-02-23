@@ -52,6 +52,7 @@ void gpio_set_output(int port, int pin, int enable) {
 
 // 割り込みカウンタ。1秒ごとにゼロリセット
 volatile unsigned long systick_count = 0;
+// 1/10秒ごとにカウントするカウンタ
 volatile unsigned long sec_count = 0;
 
 /**
@@ -59,7 +60,7 @@ volatile unsigned long sec_count = 0;
  */
 void SysTick_Handler(void) {
 	systick_count++;
-	if (1000 <= systick_count) {
+	if (100 <= systick_count) {
 		systick_count = 0;
 		sec_count++;
 		if (10000 < sec_count) {
@@ -114,10 +115,10 @@ int main(void) {
     // Enter an infinite loop
     while(1) {
     	// 点灯すべきかどうか計算
-    	int next_led = systick_count < 500;
+    	int next_led = (sec_count % 10) < 5;
     	if (led_on != next_led) {
             // led_onに合わせてLEDを点灯したり消灯したりする
-        	gpio_set_output(LED_PORT, LED_PIN, systick_count < 500);
+        	gpio_set_output(LED_PORT, LED_PIN, next_led);
         	// LEDの出力状態を更新する
     		led_on = next_led;
     	}
