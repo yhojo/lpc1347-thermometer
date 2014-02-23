@@ -14,9 +14,13 @@
 
 #include <cr_section_macros.h>
 
+#include "i2c_master.h"
+
 // LEDのポート番号と、ピン番号を定義
 #define LED_PORT 0
 #define LED_PIN 7
+
+static const uint8_t LED_ADDR = 0xE2;
 
 void gpio_init() {
 	// GPIOドメインの電源を入れる
@@ -47,6 +51,7 @@ void gpio_set_output(int port, int pin, int enable) {
 
 // 割り込みカウンタ。1秒ごとにゼロリセット
 volatile unsigned long systick_count = 0;
+volatile unsigned long sec_count = 0;
 
 /**
  * SysTick用割り込みハンドラ
@@ -55,7 +60,25 @@ void SysTick_Handler(void) {
 	systick_count++;
 	if (1000 <= systick_count) {
 		systick_count = 0;
+		sec_count++;
+		if (10000 < sec_count) {
+			sec_count = 0;
+		}
 	}
+}
+
+static inline uint8_t *format_digit(uint8_t *buf, unsigned int length, unsigned int num) {
+  unsigned int factor = 1;
+  for (uint8_t i = 1; i < length; i++) {
+    factor = factor * 10;
+  }
+  for (uint8_t i = 0; i < length; i++) {
+    unsigned int val = num / factor;
+    buf[i] = '0' + val;
+    num %= factor;
+    factor /= 10;
+  }
+  return buf;
 }
 
 int main(void) {
@@ -64,13 +87,24 @@ int main(void) {
 	// 1msごとにSysTick割り込みを設定
 	SysTick_Config(SystemCoreClock / 1000);
 
+	// I2Cマスタライブラリを400kHzで初期化
+	I2CMasterInit(400000);
+
 	// GPIOの初期化
 	gpio_init();
 	// LED用のGPIOピンを出力に設定
 	gpio_set_dir(LED_PORT, LED_PIN, 1);
 
+	// I2C用の送受信バッファ
+	uint8_t i2cbuf[5];
+	// LEDモジュールを初期化する。
+	i2cbuf[0] = 0x76; // 表示のリセット
+	I2CMasterTX(LED_ADDR, i2cbuf, 1);
+
 	// LEDの次の出力状態を保持する変数
 	int led_on = 0;
+	// 7セグLEDの表示値を保持する変数
+	unsigned long led_value = -1;
     // Enter an infinite loop
     while(1) {
     	// 点灯すべきかどうか計算
@@ -80,6 +114,14 @@ int main(void) {
         	gpio_set_output(LED_PORT, LED_PIN, systick_count < 500);
         	// LEDの出力状態を更新する
     		led_on = next_led;
+    	}
+    	if (led_value != sec_count) {
+    		// 表示値を更新
+    		led_value = sec_count;
+    		// 4桁で数値を文字列に変換してバッファに格納
+    		format_digit(i2cbuf, 4, led_value);
+    		// 4文字をLEDに書き込む
+    		I2CMasterTX(LED_ADDR, i2cbuf, 4);
     	}
     }
     return 0;
