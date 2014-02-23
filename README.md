@@ -22,7 +22,7 @@ LPC1347の`P0_5`がI2Cの`SDA`ラインで、`P0_4`が`SCL`ラインになって
 
 下記の写真で配線状態を確認してください。
 
-![I2C信号線の配線](./images/i2c-power-lines.png)
+![I2C信号線の配線](./images/i2c-signal-lines.png)
 
 ## I2Cデバイス用の電源の配線
 
@@ -39,7 +39,7 @@ LPC1347の`P0_5`がI2Cの`SDA`ラインで、`P0_4`が`SCL`ラインになって
 
 下記の写真で配線状態を確認してください。
 
-~[I2Cデバイス電源の配線](./images/i2c-signal-lines.png)
+![I2Cデバイス電源の配線](./images/i2c-power-lines.png)
 
 ## I2Cのプルアップ抵抗2本を配線
 
@@ -130,7 +130,7 @@ I2Cを制御するライブラリの`i2c_master.h`と`i2c_master.c`は丸ごと�
 
 下記の写真を参考に、正しく挿せたか確認してください。
 
-![LCDを追加](./images/put-thermo.png)
+![LCDを追加](./images/put-lcd.png)
 
 ## LCDにLEDと同じ内容を表示
 
