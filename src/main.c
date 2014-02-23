@@ -21,6 +21,7 @@
 #define LED_PIN 7
 
 static const uint8_t LED_ADDR = 0xE2;
+static const uint8_t TRM_ADDR = 0x90;
 
 void gpio_init() {
 	// GPIOドメインの電源を入れる
@@ -101,6 +102,11 @@ int main(void) {
 	i2cbuf[0] = 0x76; // 表示のリセット
 	I2CMasterTX(LED_ADDR, i2cbuf, 1);
 
+	// 温度センサを16bitモードに設定する。
+	i2cbuf[0] = 0x03; // レジスタアドレス
+	i2cbuf[1] = 0x80; // 設定値
+	I2CMasterTX(TRM_ADDR, i2cbuf, 2);
+
 	// LEDの次の出力状態を保持する変数
 	int led_on = 0;
 	// 7セグLEDの表示値を保持する変数
@@ -118,8 +124,12 @@ int main(void) {
     	if (led_value != sec_count) {
     		// 表示値を更新
     		led_value = sec_count;
+    		// 温度を取得する。
+    		I2CMasterRx(TRM_ADDR, i2cbuf, 4);
+    		// 16bit読み出し値に変換
+    		int termo_value = (i2cbuf[0] << 8) | i2cbuf[1];
     		// 4桁で数値を文字列に変換してバッファに格納
-    		format_digit(i2cbuf, 4, led_value);
+    		format_digit(i2cbuf, 4, termo_value);
     		// 4文字をLEDに書き込む
     		I2CMasterTX(LED_ADDR, i2cbuf, 4);
     	}
