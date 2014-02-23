@@ -129,6 +129,8 @@ int main(void) {
     		I2CMasterRx(TRM_ADDR, i2cbuf, 4);
     		// 16bit読み出し値に変換
     		int termo_value = (i2cbuf[0] << 8) | i2cbuf[1];
+    		// 計測単位が0.0078度Cごとなので、1/100度で表示できるよう係数をかける
+    		termo_value = termo_value * 0.78;
     		// 4桁で数値を文字列に変換してバッファに格納
     		format_digit(i2cbuf, 4, termo_value);
     		// 4文字をLEDに書き込む
