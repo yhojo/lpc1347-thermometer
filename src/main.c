@@ -123,6 +123,8 @@ int main(void) {
 	// LCDモジュールを初期化する
 	st7032i_init(LCD_ADDR, wait);
 	st7023i_clear_display(LCD_ADDR);
+	st7032i_display(LCD_ADDR, 6, 0, "\xF2" "C");
+	st7032i_display(LCD_ADDR, 0, 1, "GxP Temp");
 
 	// LEDの次の出力状態を保持する変数
 	int led_on = 0;
@@ -153,7 +155,14 @@ int main(void) {
     		// 4文字をLEDに書き込む
     		I2CMasterTX(LED_ADDR, i2cbuf, 4);
     		// 値をLCDに書き込む
-    		st7032i_display(LCD_ADDR, 0, 0, (char*)i2cbuf);
+    		char lcdbuf[10];
+    		lcdbuf[0] = i2cbuf[0];
+    		lcdbuf[1] = i2cbuf[1];
+    		lcdbuf[2] = '.';
+    		lcdbuf[3] = i2cbuf[2];
+    		lcdbuf[4] = i2cbuf[3];
+    		lcdbuf[5] = 0x00;
+    		st7032i_display(LCD_ADDR, 1, 0, lcdbuf);
     	}
     }
     return 0;
